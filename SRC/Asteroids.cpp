@@ -16,7 +16,7 @@
 
 /** Constructor. Takes arguments from command line, just in case. */
 Asteroids::Asteroids(int argc, char* argv[])
-	: GameSession(argc, argv), mGameState(STATE_START) // Initialize to start screen
+	: GameSession(argc, argv), mGameState(STATE_MAIN_MENU), mSelectedOption(0), mPowerUpSpawnRate(1.0f)
 {
 	mLevel = 0;
 	mAsteroidCount = 0;
@@ -85,16 +85,147 @@ void Asteroids::Stop()
 
 void Asteroids::OnKeyPressed(uchar key, int x, int y)
 {
-	if (mGameState == STATE_START && key == 13) { // Enter key
-		mGameState = STATE_PLAYING;
-		// Hide start screen labels
-		mTitleLabel->SetVisible(false);
-		mStartLabel->SetVisible(false);
-		// Show lives and score labels
-		mLivesLabel->SetVisible(true);
-		mScoreLabel->SetVisible(true);
-		// Create and add spaceship
-		mGameWorld->AddObject(CreateSpaceship());
+	if (mGameState == STATE_MAIN_MENU) {
+		if (key == 13) { // Enter key
+			switch (mSelectedOption) {
+			case 0: // Start
+				mGameState = STATE_PLAYING;
+				// Hide main menu labels
+				mTitleLabel->SetVisible(false);
+				mStartLabel->SetVisible(false);
+				mDifficultyLabel->SetVisible(false);
+				mInstructionsLabel->SetVisible(false);
+				mHighScoresLabel->SetVisible(false);
+				// Show lives and score labels
+				mLivesLabel->SetVisible(true);
+				mScoreLabel->SetVisible(true);
+				// Create and add spaceship
+				mGameWorld->AddObject(CreateSpaceship());
+				break;
+			case 1: // Difficulty
+				mGameState = STATE_DIFFICULTY_MENU;
+				mSelectedOption = 0; // Reset to first difficulty option
+				// Hide main menu labels
+				mTitleLabel->SetVisible(false);
+				mStartLabel->SetVisible(false);
+				mDifficultyLabel->SetVisible(false);
+				mInstructionsLabel->SetVisible(false);
+				mHighScoresLabel->SetVisible(false);
+				// Show difficulty menu labels
+				mDifficultyTitleLabel->SetVisible(true);
+				mEasyLabel->SetVisible(true);
+				mNormalLabel->SetVisible(true);
+				mHardLabel->SetVisible(true);
+				mDifficultyExitLabel->SetVisible(true);
+				// Highlight selected option
+				mEasyLabel->SetColor(GLVector3f(1.0f, 1.0f, 0.0f)); // Yellow
+				mNormalLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f)); // White
+				mHardLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f)); // White
+				break;
+			case 2: // Instructions
+				mGameState = STATE_INSTRUCTIONS;
+				// Hide main menu labels
+				mTitleLabel->SetVisible(false);
+				mStartLabel->SetVisible(false);
+				mDifficultyLabel->SetVisible(false);
+				mInstructionsLabel->SetVisible(false);
+				mHighScoresLabel->SetVisible(false);
+				// Show instructions
+				mInstructionsTextLabel->SetVisible(true);
+				break;
+			case 3: // High Scores
+				mGameState = STATE_HIGH_SCORES;
+				// Hide main menu labels
+				mTitleLabel->SetVisible(false);
+				mStartLabel->SetVisible(false);
+				mDifficultyLabel->SetVisible(false);
+				mInstructionsLabel->SetVisible(false);
+				mHighScoresLabel->SetVisible(false);
+				// Show high scores
+				mHighScoresTitleLabel->SetVisible(true);
+				mHighScoresTableLabel->SetVisible(true);
+				mHighScoresExitLabel->SetVisible(true);
+				break;
+			}
+		}
+	}
+	else if (mGameState == STATE_DIFFICULTY_MENU) {
+		if (key == 13) { // Enter key
+			switch (mSelectedOption) {
+			case 0: // Easy
+				mPowerUpSpawnRate = 1.5f;
+				break;
+			case 1: // Normal
+				mPowerUpSpawnRate = 1.0f;
+				break;
+			case 2: // Hard
+				mPowerUpSpawnRate = 0.0f;
+				break;
+			}
+			// Return to main menu
+			mGameState = STATE_MAIN_MENU;
+			mSelectedOption = 1; // Return to Difficulty option
+			// Hide difficulty menu labels
+			mDifficultyTitleLabel->SetVisible(false);
+			mEasyLabel->SetVisible(false);
+			mNormalLabel->SetVisible(false);
+			mHardLabel->SetVisible(false);
+			mDifficultyExitLabel->SetVisible(false);
+			// Show main menu labels
+			mTitleLabel->SetVisible(true);
+			mStartLabel->SetVisible(true);
+			mDifficultyLabel->SetVisible(true);
+			mInstructionsLabel->SetVisible(true);
+			mHighScoresLabel->SetVisible(true);
+			// Highlight selected option
+			mStartLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f)); // White
+			mDifficultyLabel->SetColor(GLVector3f(1.0f, 1.0f, 0.0f)); // Yellow
+			mInstructionsLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f)); // White
+			mHighScoresLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f)); // White
+		}
+		else if (key == ' ') { // Spacebar to exit
+			mGameState = STATE_MAIN_MENU;
+			mSelectedOption = 1; // Return to Difficulty option
+			// Hide difficulty menu labels
+			mDifficultyTitleLabel->SetVisible(false);
+			mEasyLabel->SetVisible(false);
+			mNormalLabel->SetVisible(false);
+			mHardLabel->SetVisible(false);
+			mDifficultyExitLabel->SetVisible(false);
+			// Show main menu labels
+			mTitleLabel->SetVisible(true);
+			mStartLabel->SetVisible(true);
+			mDifficultyLabel->SetVisible(true);
+			mInstructionsLabel->SetVisible(true);
+			mHighScoresLabel->SetVisible(true);
+			// Highlight selected option
+			mStartLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f)); // White
+			mDifficultyLabel->SetColor(GLVector3f(1.0f, 1.0f, 0.0f)); // Yellow
+			mInstructionsLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f)); // White
+			mHighScoresLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f)); // White
+		}
+	}
+	else if (mGameState == STATE_INSTRUCTIONS || mGameState == STATE_HIGH_SCORES) {
+		if (key == ' ') { // Spacebar to exit
+			mGameState = STATE_MAIN_MENU;
+			mSelectedOption = mGameState == STATE_INSTRUCTIONS ? 2 : 3; // Return to respective option
+			// Hide instructions or high scores labels
+			mInstructionsTextLabel->SetVisible(false);
+			mHighScoresTitleLabel->SetVisible(false);
+			mHighScoresTableLabel->SetVisible(false);
+			mHighScoresExitLabel->SetVisible(false);
+			// Show main menu labels
+			mTitleLabel->SetVisible(true);
+			mStartLabel->SetVisible(true);
+			mDifficultyLabel->SetVisible(true);
+			mInstructionsLabel->SetVisible(true);
+			mHighScoresLabel->SetVisible(true);
+			// Highlight selected option
+			mStartLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 0 ? 0.0f : 1.0f)); // Yellow if selected
+			mDifficultyLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 1 ? 0.0f : 1.0f));
+			mInstructionsLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 2 ? 0.0f : 1.0f));
+			mHighScoresLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 3 ? 0.0f : 1.0f));
+		}
 	}
 	else if (mGameState == STATE_PLAYING) {
 		switch (key)
@@ -112,7 +243,41 @@ void Asteroids::OnKeyReleased(uchar key, int x, int y) {}
 
 void Asteroids::OnSpecialKeyPressed(int key, int x, int y)
 {
-	if (mGameState == STATE_PLAYING) {
+	if (mGameState == STATE_MAIN_MENU) {
+		if (key == GLUT_KEY_UP) {
+			mSelectedOption = (mSelectedOption - 1 + 4) % 4; // Cycle up
+			// Update colors to highlight selected option
+			mStartLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 0 ? 0.0f : 1.0f));
+			mDifficultyLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 1 ? 0.0f : 1.0f));
+			mInstructionsLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 2 ? 0.0f : 1.0f));
+			mHighScoresLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 3 ? 0.0f : 1.0f));
+		}
+		else if (key == GLUT_KEY_DOWN) {
+			mSelectedOption = (mSelectedOption + 1) % 4; // Cycle down
+			// Update colors to highlight selected option
+			mStartLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 0 ? 0.0f : 1.0f));
+			mDifficultyLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 1 ? 0.0f : 1.0f));
+			mInstructionsLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 2 ? 0.0f : 1.0f));
+			mHighScoresLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 3 ? 0.0f : 1.0f));
+		}
+	}
+	else if (mGameState == STATE_DIFFICULTY_MENU) {
+		if (key == GLUT_KEY_UP) {
+			mSelectedOption = (mSelectedOption - 1 + 3) % 3; // Cycle up (3 options)
+			// Update colors to highlight selected option
+			mEasyLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 0 ? 0.0f : 1.0f));
+			mNormalLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 1 ? 0.0f : 1.0f));
+			mHardLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 2 ? 0.0f : 1.0f));
+		}
+		else if (key == GLUT_KEY_DOWN) {
+			mSelectedOption = (mSelectedOption + 1) % 3; // Cycle down (3 options)
+			// Update colors to highlight selected option
+			mEasyLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 0 ? 0.0f : 1.0f));
+			mNormalLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 1 ? 0.0f : 1.0f));
+			mHardLabel->SetColor(GLVector3f(1.0f, 1.0f, mSelectedOption == 2 ? 0.0f : 1.0f));
+		}
+	}
+	else if (mGameState == STATE_PLAYING) {
 		switch (key)
 		{
 			// If up arrow key is pressed start applying forward thrust
@@ -183,6 +348,23 @@ void Asteroids::OnTimer(int value)
 		if (value == SHOW_GAME_OVER)
 		{
 			mGameOverLabel->SetVisible(true);
+			// Placeholder for gamer tag input (to be implemented later)
+			// For now, transition back to main menu
+			mGameState = STATE_MAIN_MENU;
+			mSelectedOption = 3; // Highlight High Scores
+			mLivesLabel->SetVisible(false);
+			mScoreLabel->SetVisible(false);
+			mGameOverLabel->SetVisible(false);
+			mTitleLabel->SetVisible(true);
+			mStartLabel->SetVisible(true);
+			mDifficultyLabel->SetVisible(true);
+			mInstructionsLabel->SetVisible(true);
+			mHighScoresLabel->SetVisible(true);
+			// Highlight selected option
+			mStartLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f));
+			mDifficultyLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f));
+			mInstructionsLabel->SetColor(GLVector3f(1.0f, 1.0f, 1.0f));
+			mHighScoresLabel->SetColor(GLVector3f(1.0f, 1.0f, 0.0f));
 		}
 	}
 }
@@ -251,7 +433,7 @@ void Asteroids::CreateGUI()
 	mLivesLabel->SetVisible(false);
 
 	// Create a new GUILabel and wrap it up in a shared_ptr
-	mGameOverLabel = shared_ptr<GUILabel>(new GUILabel("GAME OVER"));
+	mGameOverLabel = make_shared<GUILabel>("GAME OVER");
 	// Set the horizontal alignment of the label to GUI_HALIGN_CENTER
 	mGameOverLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	// Set the vertical alignment of the label to GUI_VALIGN_MIDDLE
@@ -263,17 +445,89 @@ void Asteroids::CreateGUI()
 		= static_pointer_cast<GUIComponent>(mGameOverLabel);
 	mGameDisplay->GetContainer()->AddComponent(game_over_component, GLVector2f(0.5f, 0.5f));
 
-	// Create start screen title label
+	// Main menu labels
 	mTitleLabel = make_shared<GUILabel>("Asteroids");
 	mTitleLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mTitleLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-	mGameDisplay->GetContainer()->AddComponent(mTitleLabel, GLVector2f(0.5f, 0.6f));
+	mGameDisplay->GetContainer()->AddComponent(mTitleLabel, GLVector2f(0.5f, 0.7f));
 
-	// Create start screen start label
 	mStartLabel = make_shared<GUILabel>("Start");
 	mStartLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
 	mStartLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-	mGameDisplay->GetContainer()->AddComponent(mStartLabel, GLVector2f(0.5f, 0.4f));
+	mStartLabel->SetColor(GLVector3f(1.0f, 1.0f, 0.0f)); // Yellow (selected)
+	mGameDisplay->GetContainer()->AddComponent(mStartLabel, GLVector2f(0.5f, 0.5f));
+
+	mDifficultyLabel = make_shared<GUILabel>("Difficulty");
+	mDifficultyLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mDifficultyLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mGameDisplay->GetContainer()->AddComponent(mDifficultyLabel, GLVector2f(0.5f, 0.4f));
+
+	mInstructionsLabel = make_shared<GUILabel>("Instructions");
+	mInstructionsLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mInstructionsLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mGameDisplay->GetContainer()->AddComponent(mInstructionsLabel, GLVector2f(0.5f, 0.3f));
+
+	mHighScoresLabel = make_shared<GUILabel>("High Scores");
+	mHighScoresLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mHighScoresLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mGameDisplay->GetContainer()->AddComponent(mHighScoresLabel, GLVector2f(0.5f, 0.2f));
+
+	// Difficulty submenu labels
+	mDifficultyTitleLabel = make_shared<GUILabel>("Select Difficulty");
+	mDifficultyTitleLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mDifficultyTitleLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mDifficultyTitleLabel->SetVisible(false);
+	mGameDisplay->GetContainer()->AddComponent(mDifficultyTitleLabel, GLVector2f(0.5f, 0.7f));
+
+	mEasyLabel = make_shared<GUILabel>("Easy");
+	mEasyLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mEasyLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mEasyLabel->SetVisible(false);
+	mGameDisplay->GetContainer()->AddComponent(mEasyLabel, GLVector2f(0.5f, 0.5f));
+
+	mNormalLabel = make_shared<GUILabel>("Normal");
+	mNormalLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mNormalLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mNormalLabel->SetVisible(false);
+	mGameDisplay->GetContainer()->AddComponent(mNormalLabel, GLVector2f(0.5f, 0.4f));
+
+	mHardLabel = make_shared<GUILabel>("Hard");
+	mHardLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mHardLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mHardLabel->SetVisible(false);
+	mGameDisplay->GetContainer()->AddComponent(mHardLabel, GLVector2f(0.5f, 0.3f));
+
+	mDifficultyExitLabel = make_shared<GUILabel>("Press spacebar to exit to the main menu");
+	mDifficultyExitLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mDifficultyExitLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mDifficultyExitLabel->SetVisible(false);
+	mGameDisplay->GetContainer()->AddComponent(mDifficultyExitLabel, GLVector2f(0.5f, 0.1f));
+
+	// Instructions screen label
+	mInstructionsTextLabel = make_shared<GUILabel>("Use arrows to change velocity in the desired direction\nPress spacebar to shoot bullets to destroy asteroids\n\nPress spacebar to exit to the main menu");
+	mInstructionsTextLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mInstructionsTextLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mInstructionsTextLabel->SetVisible(false);
+	mGameDisplay->GetContainer()->AddComponent(mInstructionsTextLabel, GLVector2f(0.5f, 0.5f));
+
+	// High scores screen labels
+	mHighScoresTitleLabel = make_shared<GUILabel>("High Scores");
+	mHighScoresTitleLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mHighScoresTitleLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mHighScoresTitleLabel->SetVisible(false);
+	mGameDisplay->GetContainer()->AddComponent(mHighScoresTitleLabel, GLVector2f(0.5f, 0.7f));
+
+	mHighScoresTableLabel = make_shared<GUILabel>("1. Player1: 1000\n2. Player2: 800\n3. Player3: 600\n4. Player4: 400\n5. Player5: 200");
+	mHighScoresTableLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mHighScoresTableLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mHighScoresTableLabel->SetVisible(false);
+	mGameDisplay->GetContainer()->AddComponent(mHighScoresTableLabel, GLVector2f(0.5f, 0.5f));
+
+	mHighScoresExitLabel = make_shared<GUILabel>("Press spacebar to exit to the main menu");
+	mHighScoresExitLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+	mHighScoresExitLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+	mHighScoresExitLabel->SetVisible(false);
+	mGameDisplay->GetContainer()->AddComponent(mHighScoresExitLabel, GLVector2f(0.5f, 0.1f));
 }
 
 void Asteroids::OnScoreChanged(int score)

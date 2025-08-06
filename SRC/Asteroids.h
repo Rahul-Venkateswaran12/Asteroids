@@ -18,7 +18,13 @@ class Asteroids : public GameSession, public IKeyboardListener, public IGameWorl
 {
 public:
 	// Enum to manage game states
-	enum GameState { STATE_START, STATE_PLAYING };
+	enum GameState {
+		STATE_MAIN_MENU,
+		STATE_PLAYING,
+		STATE_DIFFICULTY_MENU,
+		STATE_INSTRUCTIONS,
+		STATE_HIGH_SCORES
+	};
 
 	Asteroids(int argc, char* argv[]);
 	virtual ~Asteroids(void);
@@ -51,12 +57,30 @@ private:
 	shared_ptr<GUILabel> mScoreLabel;
 	shared_ptr<GUILabel> mLivesLabel;
 	shared_ptr<GUILabel> mGameOverLabel;
-	shared_ptr<GUILabel> mTitleLabel; // Added for start screen
-	shared_ptr<GUILabel> mStartLabel; // Added for start screen
+	// Main menu labels
+	shared_ptr<GUILabel> mTitleLabel;
+	shared_ptr<GUILabel> mStartLabel;
+	shared_ptr<GUILabel> mDifficultyLabel;
+	shared_ptr<GUILabel> mInstructionsLabel;
+	shared_ptr<GUILabel> mHighScoresLabel;
+	// Difficulty submenu labels
+	shared_ptr<GUILabel> mDifficultyTitleLabel;
+	shared_ptr<GUILabel> mEasyLabel;
+	shared_ptr<GUILabel> mNormalLabel;
+	shared_ptr<GUILabel> mHardLabel;
+	shared_ptr<GUILabel> mDifficultyExitLabel;
+	// Instructions screen label
+	shared_ptr<GUILabel> mInstructionsTextLabel;
+	// High scores screen labels
+	shared_ptr<GUILabel> mHighScoresTitleLabel;
+	shared_ptr<GUILabel> mHighScoresTableLabel;
+	shared_ptr<GUILabel> mHighScoresExitLabel;
 
 	uint mLevel;
 	uint mAsteroidCount;
-	GameState mGameState; // Added to track game state
+	GameState mGameState;
+	int mSelectedOption; // Tracks selected menu option
+	float mPowerUpSpawnRate; // Stores difficulty setting
 
 	void ResetSpaceship();
 	shared_ptr<GameObject> CreateSpaceship();
