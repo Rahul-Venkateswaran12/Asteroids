@@ -1,1 +1,10 @@
-﻿
+﻿cl : command line  warning D9035: option 'Gm' has been deprecated and will be removed in a future release
+  ExtraLife.cpp
+D:\Data\University\Coursework\Year 2\Games Technology\Resit\IN2026 Coursework Code\SRC\ExtraLife.cpp(19,11): error C2027: use of undefined type 'BoundingShape'
+      D:\Data\University\Coursework\Year 2\Games Technology\Resit\IN2026 Coursework Code\SRC\GameObject.h(10,7):
+      see declaration of 'BoundingShape'
+  
+D:\Data\University\Coursework\Year 2\Games Technology\Resit\IN2026 Coursework Code\SRC\ExtraLife.cpp(19,27): error C2039: 'CollisionTest': is not a member of 'std::shared_ptr<BoundingShape>'
+      C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\include\memory(1565,7):
+      see declaration of 'std::shared_ptr<BoundingShape>'
+  

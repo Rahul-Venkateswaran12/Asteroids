@@ -1,0 +1,36 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Data\\University\\Coursework\\Year 2\\Games Technology\\Resit\\IN2026 Coursework Code\\VC\\Asteroids\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{97AF88B3-4E3C-43B5-8770-C655BCAAB734}|Asteroids.vcxproj|D:\\Data\\University\\Coursework\\Year 2\\Games Technology\\Resit\\IN2026 Coursework Code\\src\\Asteroids.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Asteroids.cpp",
+              "DocumentMoniker": "D:\\Data\\University\\Coursework\\Year 2\\Games Technology\\Resit\\IN2026 Coursework Code\\SRC\\Asteroids.cpp",
+              "RelativeDocumentMoniker": "..\\..\\SRC\\Asteroids.cpp",
+              "ToolTip": "D:\\Data\\University\\Coursework\\Year 2\\Games Technology\\Resit\\IN2026 Coursework Code\\SRC\\Asteroids.cpp",
+              "RelativeToolTip": "..\\..\\SRC\\Asteroids.cpp",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-08-07T18:24:18.773Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

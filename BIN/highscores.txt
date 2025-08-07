@@ -1,5 +1,5 @@
 HSDIOLDA 100
 R 70
+KWSJ 70
 R 40
 R 30
---- 0
