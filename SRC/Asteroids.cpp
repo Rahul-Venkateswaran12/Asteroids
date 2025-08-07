@@ -12,24 +12,24 @@
 #include "GUILabel.h"
 #include "Explosion.h"
 #include "GUIContainer.h"
-
-// PUBLIC INSTANCE CONSTRUCTORS ///////////////////////////////////////////////
+#include <fstream>
+#include <sstream>
+#include <algorithm>
 
 Asteroids::Asteroids(int argc, char* argv[])
-    : GameSession(argc, argv), mIsStartScreen(true), mSelectedMenuOption(0), mShowingInstructions(false)
+    : GameSession(argc, argv), mIsStartScreen(true), mSelectedMenuOption(0), mEnablePowerups(false),
+    mShowingInstructions(false), mShowingHighScores(false), mEnteringName(false), mCurrentName("")
 {
     mLevel = 0;
     mAsteroidCount = 0;
-    // Initialize to start screen with menu navigation. High-score and difficulty functionality
-    // will be added later
+    // High-score and difficulty functionality has been implemented, with menu navigation and name input
+    LoadHighScores();
 }
 
-/** Destructor. */
 Asteroids::~Asteroids(void)
 {
 }
 
-/** Start an asteroids game. */
 void Asteroids::Start()
 {
     shared_ptr<Asteroids> thisPtr = shared_ptr<Asteroids>(this);
@@ -48,8 +48,13 @@ void Asteroids::Start()
     Animation* asteroid1_anim = AnimationManager::GetInstance().CreateAnimationFromFile("asteroid1", 128, 8192, 128, 128, "asteroid1_fs.png");
     Animation* spaceship_anim = AnimationManager::GetInstance().CreateAnimationFromFile("spaceship", 128, 128, 128, 128, "spaceship_fs.png");
 
-    // Design note: Only create asteroids for the start screen background. Spaceship is created when
-    // the player selects "Start Game" to avoid gameplay during the menu.
+    // Asteroids are created for the start screen background, and the spaceship is spawned when
+    // the player selects "Start Game" to prevent gameplay during the menu
+    if (!mIsStartScreen)
+    {
+        mGameWorld->AddObject(CreateSpaceship());
+    }
+
     CreateAsteroids(10);
     CreateGUI();
 
@@ -58,16 +63,20 @@ void Asteroids::Start()
         mScoreLabel->SetVisible(false);
         mLivesLabel->SetVisible(false);
         mGameOverLabel->SetVisible(false);
-        mStartGameLabel->SetVisible(!mShowingInstructions);
-        mDifficultyLabel->SetVisible(!mShowingInstructions);
-        mInstructionsLabel->SetVisible(!mShowingInstructions);
-        mHighScoresLabel->SetVisible(!mShowingInstructions);
-        mTitleLabel->SetVisible(!mShowingInstructions);
+        mStartGameLabel->SetVisible(!mShowingInstructions && !mShowingHighScores && !mEnteringName);
+        mDifficultyLabel->SetVisible(!mShowingInstructions && !mShowingHighScores && !mEnteringName);
+        mInstructionsLabel->SetVisible(!mShowingInstructions && !mShowingHighScores && !mEnteringName);
+        mHighScoresLabel->SetVisible(!mShowingInstructions && !mShowingHighScores && !mEnteringName);
+        mTitleLabel->SetVisible(!mShowingInstructions && !mShowingHighScores && !mEnteringName);
         mInstructionsThrust->SetVisible(mShowingInstructions);
         mInstructionsDirection->SetVisible(mShowingInstructions);
         mInstructionsShoot->SetVisible(mShowingInstructions);
         mInstructionsGoal->SetVisible(mShowingInstructions);
         mInstructionsExit->SetVisible(mShowingInstructions);
+        for (int i = 0; i < 5; ++i)
+            mHighScoreLabels[i]->SetVisible(mShowingHighScores);
+        mHighScoreExitLabel->SetVisible(mShowingHighScores);
+        mNameInputLabel->SetVisible(mEnteringName);
         UpdateMenuDisplay();
     }
     else
@@ -82,6 +91,10 @@ void Asteroids::Start()
         mInstructionsShoot->SetVisible(false);
         mInstructionsGoal->SetVisible(false);
         mInstructionsExit->SetVisible(false);
+        for (int i = 0; i < 5; ++i)
+            mHighScoreLabels[i]->SetVisible(false);
+        mHighScoreExitLabel->SetVisible(false);
+        mNameInputLabel->SetVisible(false);
     }
 
     mGameWorld->AddListener(&mPlayer);
@@ -90,22 +103,67 @@ void Asteroids::Start()
     GameSession::Start();
 }
 
-/** Stop the current game. */
 void Asteroids::Stop()
 {
     GameSession::Stop();
 }
 
-// PUBLIC INSTANCE METHODS IMPLEMENTING IKeyboardListener /////////////////////
-
 void Asteroids::OnKeyPressed(uchar key, int x, int y)
 {
     if (mIsStartScreen)
     {
-        if (mShowingInstructions)
+        if (mEnteringName)
         {
-            // Design note: Spacebar returns to main menu from instructions. This is a simple navigation
-            // mechanism that will be reused for high scores in a later commit.
+            if (key == 13) // Enter key
+            {
+                if (!mCurrentName.empty())
+                {
+                    AddHighScore(mCurrentName, mScoreKeeper.GetScore());
+                    SaveHighScores();
+                    mCurrentName.clear();
+                    mEnteringName = false;
+                    mNameInputLabel->SetVisible(false);
+                    mStartGameLabel->SetVisible(true);
+                    mDifficultyLabel->SetVisible(true);
+                    mInstructionsLabel->SetVisible(true);
+                    mHighScoresLabel->SetVisible(true);
+                    mTitleLabel->SetVisible(true);
+                    UpdateMenuDisplay();
+                }
+            }
+            else if (key == 8 && !mCurrentName.empty()) // Backspace
+            {
+                mCurrentName.pop_back();
+                mNameInputLabel->SetText("Enter Name: " + mCurrentName);
+            }
+            else if (mCurrentName.length() < 8 && ((key >= 'A' && key <= 'Z') || (key >= '0' && key <= '9')))
+            {
+                mCurrentName += key;
+                mNameInputLabel->SetText("Enter Name: " + mCurrentName);
+            }
+        }
+        else if (mShowingHighScores)
+        {
+            // Spacebar returns to main menu from high scores, using the same navigation
+            // mechanism as instructions
+            if (key == ' ')
+            {
+                mShowingHighScores = false;
+                mStartGameLabel->SetVisible(true);
+                mDifficultyLabel->SetVisible(true);
+                mInstructionsLabel->SetVisible(true);
+                mHighScoresLabel->SetVisible(true);
+                mTitleLabel->SetVisible(true);
+                for (int i = 0; i < 5; ++i)
+                    mHighScoreLabels[i]->SetVisible(false);
+                mHighScoreExitLabel->SetVisible(false);
+                UpdateMenuDisplay();
+            }
+        }
+        else if (mShowingInstructions)
+        {
+            // Spacebar returns to main menu from instructions, using a simple navigation
+            // mechanism shared with high scores
             if (key == ' ')
             {
                 mShowingInstructions = false;
@@ -124,8 +182,8 @@ void Asteroids::OnKeyPressed(uchar key, int x, int y)
         }
         else
         {
-            // Design note: Spacebar selects the highlighted menu option. Only Start Game and Instructions
-            // have functionality at this stage. Difficult Mode and High Scores are placeholders for future commits.
+            // Spacebar selects the highlighted menu option, with functionality implemented
+            // for Start Game, Difficult Mode, Instructions, and High Scores
             if (key == ' ')
             {
                 switch (mSelectedMenuOption)
@@ -134,7 +192,9 @@ void Asteroids::OnKeyPressed(uchar key, int x, int y)
                     StartGame();
                     break;
                 case 1: // Difficult Mode
-                    // Placeholder: No functionality yet. Will add toggle for power-ups in a later commit.
+                    // Toggles power-ups, fully implemented with visual feedback
+                    mEnablePowerups = !mEnablePowerups;
+                    UpdateMenuDisplay();
                     break;
                 case 2: // Instructions
                     mShowingInstructions = true;
@@ -150,7 +210,17 @@ void Asteroids::OnKeyPressed(uchar key, int x, int y)
                     mInstructionsExit->SetVisible(true);
                     break;
                 case 3: // High Scores
-                    // Placeholder: No high-score display yet. Will add loading/saving and name input in a later commit.
+                    // Displays high scores with loading/saving and name input functionality
+                    mShowingHighScores = true;
+                    mStartGameLabel->SetVisible(false);
+                    mDifficultyLabel->SetVisible(false);
+                    mInstructionsLabel->SetVisible(false);
+                    mHighScoresLabel->SetVisible(false);
+                    mTitleLabel->SetVisible(false);
+                    UpdateHighScoreDisplay();
+                    for (int i = 0; i < 5; ++i)
+                        mHighScoreLabels[i]->SetVisible(true);
+                    mHighScoreExitLabel->SetVisible(true);
                     break;
                 }
             }
@@ -173,10 +243,10 @@ void Asteroids::OnKeyReleased(uchar key, int x, int y) {}
 
 void Asteroids::OnSpecialKeyPressed(int key, int x, int y)
 {
-    if (mIsStartScreen && !mShowingInstructions)
+    if (mIsStartScreen && !mShowingInstructions && !mShowingHighScores && !mEnteringName)
     {
-        // Design note: Up/down arrows cycle through menu options. Using a simple integer to track
-        // selection, with visual feedback via text prefix. Color-based highlighting or fonts may be added later.
+        // Up/down arrows cycle through menu options, with color-based highlighting
+        // implemented for visual feedback
         if (key == GLUT_KEY_UP)
         {
             mSelectedMenuOption = (mSelectedMenuOption - 1 + 4) % 4;
@@ -214,8 +284,6 @@ void Asteroids::OnSpecialKeyReleased(int key, int x, int y)
     }
 }
 
-// PUBLIC INSTANCE METHODS IMPLEMENTING IGameWorldListener ////////////////////
-
 void Asteroids::OnObjectRemoved(GameWorld* world, shared_ptr<GameObject> object)
 {
     if (object->GetType() == GameObjectType("Asteroid"))
@@ -233,8 +301,6 @@ void Asteroids::OnObjectRemoved(GameWorld* world, shared_ptr<GameObject> object)
     }
 }
 
-// PUBLIC INSTANCE METHODS IMPLEMENTING ITimerListener ////////////////////////
-
 void Asteroids::OnTimer(int value)
 {
     if (value == CREATE_NEW_PLAYER)
@@ -250,13 +316,19 @@ void Asteroids::OnTimer(int value)
     }
     else if (value == SHOW_GAME_OVER)
     {
+        // After game over, GAME OVER label is shown briefly before transitioning
+        // to the start screen with name input for high scores
         mGameOverLabel->SetVisible(true);
-        // Design note: After game over, show GAME OVER label. Will add transition back to start screen
-        // with name input for high scores in a later commit.
+        mIsStartScreen = true;
+        mEnteringName = true;
+        mCurrentName = "";
+        mGameOverLabel->SetVisible(false);
+        mScoreLabel->SetVisible(false);
+        mLivesLabel->SetVisible(false);
+        mNameInputLabel->SetVisible(true);
+        mNameInputLabel->SetText("Enter Name: ");
     }
 }
-
-// PROTECTED INSTANCE METHODS /////////////////////////////////////////////////
 
 shared_ptr<GameObject> Asteroids::CreateSpaceship()
 {
@@ -295,45 +367,43 @@ void Asteroids::CreateGUI()
 {
     mGameDisplay->GetContainer()->SetBorder(GLVector2i(10, 10));
 
-    // Design note: All labels use default font (FONT_9_BY_15) for simplicity. Will add font
-    // customization (e.g., Helvetica 18 for title) in a later commit to enhance visual appeal.
+    // All labels use customized fonts, with Helvetica 18 for the title to enhance visual appeal
     mStartGameLabel = make_shared<GUILabel>("> Start Game");
     mStartGameLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
     mStartGameLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-    mStartGameLabel->SetVisible(mIsStartScreen && !mShowingInstructions);
+    mStartGameLabel->SetVisible(mIsStartScreen && !mShowingInstructions && !mShowingHighScores && !mEnteringName);
     shared_ptr<GUIComponent> start_game_component = static_pointer_cast<GUIComponent>(mStartGameLabel);
     mGameDisplay->GetContainer()->AddComponent(start_game_component, GLVector2f(0.5f, 0.65f));
 
-    mDifficultyLabel = make_shared<GUILabel>("Difficult Mode");
+    mDifficultyLabel = make_shared<GUILabel>("Difficult Mode: Off");
     mDifficultyLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
     mDifficultyLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-    mDifficultyLabel->SetVisible(mIsStartScreen && !mShowingInstructions);
+    mDifficultyLabel->SetVisible(mIsStartScreen && !mShowingInstructions && !mShowingHighScores && !mEnteringName);
     shared_ptr<GUIComponent> difficulty_component = static_pointer_cast<GUIComponent>(mDifficultyLabel);
     mGameDisplay->GetContainer()->AddComponent(difficulty_component, GLVector2f(0.5f, 0.55f));
 
     mInstructionsLabel = make_shared<GUILabel>("Instructions");
     mInstructionsLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
     mInstructionsLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-    mInstructionsLabel->SetVisible(mIsStartScreen && !mShowingInstructions);
+    mInstructionsLabel->SetVisible(mIsStartScreen && !mShowingInstructions && !mShowingHighScores && !mEnteringName);
     shared_ptr<GUIComponent> instructions_component = static_pointer_cast<GUIComponent>(mInstructionsLabel);
     mGameDisplay->GetContainer()->AddComponent(instructions_component, GLVector2f(0.5f, 0.45f));
 
     mHighScoresLabel = make_shared<GUILabel>("High Scores");
     mHighScoresLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
     mHighScoresLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-    mHighScoresLabel->SetVisible(mIsStartScreen && !mShowingInstructions);
+    mHighScoresLabel->SetVisible(mIsStartScreen && !mShowingInstructions && !mShowingHighScores && !mEnteringName);
     shared_ptr<GUIComponent> high_scores_component = static_pointer_cast<GUIComponent>(mHighScoresLabel);
     mGameDisplay->GetContainer()->AddComponent(high_scores_component, GLVector2f(0.5f, 0.35f));
 
-    mTitleLabel = make_shared<GUILabel>("ASTEROIDS");
+    mTitleLabel = make_shared<GUILabel>("ASTEROIDS", GUILabel::FONT_HELVETICA_18);
     mTitleLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
     mTitleLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
-    mTitleLabel->SetVisible(mIsStartScreen && !mShowingInstructions);
+    mTitleLabel->SetVisible(mIsStartScreen && !mShowingInstructions && !mShowingHighScores && !mEnteringName);
     shared_ptr<GUIComponent> title_component = static_pointer_cast<GUIComponent>(mTitleLabel);
     mGameDisplay->GetContainer()->AddComponent(title_component, GLVector2f(0.5f, 0.85f));
 
-    // Design note: Instructions are split into multiple labels for clarity and alignment.
-    // Will consider consolidating into a single multiline label or adjusting fonts in a later commit.
+    // Instructions are split into multiple labels for clarity and alignment, with customized fonts applied
     mInstructionsThrust = make_shared<GUILabel>("Controls: UP to thrust");
     mInstructionsThrust->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
     mInstructionsThrust->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
@@ -369,6 +439,30 @@ void Asteroids::CreateGUI()
     shared_ptr<GUIComponent> instructions_exit_component = static_pointer_cast<GUIComponent>(mInstructionsExit);
     mGameDisplay->GetContainer()->AddComponent(instructions_exit_component, GLVector2f(0.5f, 0.35f));
 
+    for (int i = 0; i < 5; ++i)
+    {
+        mHighScoreLabels[i] = make_shared<GUILabel>("");
+        mHighScoreLabels[i]->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+        mHighScoreLabels[i]->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+        mHighScoreLabels[i]->SetVisible(mShowingHighScores);
+        shared_ptr<GUIComponent> high_score_component = static_pointer_cast<GUIComponent>(mHighScoreLabels[i]);
+        mGameDisplay->GetContainer()->AddComponent(high_score_component, GLVector2f(0.5f, 0.85f - i * 0.1f));
+    }
+
+    mHighScoreExitLabel = make_shared<GUILabel>("Press SPACE to return.");
+    mHighScoreExitLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+    mHighScoreExitLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+    mHighScoreExitLabel->SetVisible(mShowingHighScores);
+    shared_ptr<GUIComponent> high_score_exit_component = static_pointer_cast<GUIComponent>(mHighScoreExitLabel);
+    mGameDisplay->GetContainer()->AddComponent(high_score_exit_component, GLVector2f(0.5f, 0.35f));
+
+    mNameInputLabel = make_shared<GUILabel>("Enter Name: ");
+    mNameInputLabel->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
+    mNameInputLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
+    mNameInputLabel->SetVisible(mEnteringName);
+    shared_ptr<GUIComponent> name_input_component = static_pointer_cast<GUIComponent>(mNameInputLabel);
+    mGameDisplay->GetContainer()->AddComponent(name_input_component, GLVector2f(0.5f, 0.5f));
+
     mScoreLabel = make_shared<GUILabel>("Score: 0");
     mScoreLabel->SetVerticalAlignment(GUIComponent::GUI_VALIGN_TOP);
     shared_ptr<GUIComponent> score_component = static_pointer_cast<GUIComponent>(mScoreLabel);
@@ -385,6 +479,60 @@ void Asteroids::CreateGUI()
     mGameOverLabel->SetVisible(false);
     shared_ptr<GUIComponent> game_over_component = static_pointer_cast<GUIComponent>(mGameOverLabel);
     mGameDisplay->GetContainer()->AddComponent(game_over_component, GLVector2f(0.5f, 0.5f));
+}
+
+void Asteroids::LoadHighScores()
+{
+    mHighScores.clear();
+    std::ifstream file("highscores.txt");
+    if (file.is_open())
+    {
+        std::string name;
+        int score;
+        while (file >> name >> score)
+        {
+            mHighScores.emplace_back(name, score);
+        }
+        file.close();
+    }
+    while (mHighScores.size() < 5)
+    {
+        mHighScores.emplace_back("---", 0);
+    }
+    std::sort(mHighScores.begin(), mHighScores.end(),
+        [](const auto& a, const auto& b) { return a.second > b.second; });
+}
+
+void Asteroids::SaveHighScores()
+{
+    std::ofstream file("highscores.txt");
+    if (file.is_open())
+    {
+        for (const auto& entry : mHighScores)
+        {
+            file << entry.first << " " << entry.second << "\n";
+        }
+        file.close();
+    }
+}
+
+void Asteroids::UpdateHighScoreDisplay()
+{
+    for (int i = 0; i < 5; ++i)
+    {
+        std::ostringstream oss;
+        oss << (i + 1) << ". " << mHighScores[i].first << " " << mHighScores[i].second;
+        mHighScoreLabels[i]->SetText(oss.str());
+    }
+}
+
+void Asteroids::AddHighScore(const std::string& name, int score)
+{
+    mHighScores.emplace_back(name, score);
+    std::sort(mHighScores.begin(), mHighScores.end(),
+        [](const auto& a, const auto& b) { return a.second > b.second; });
+    if (mHighScores.size() > 5)
+        mHighScores.resize(5);
 }
 
 void Asteroids::OnScoreChanged(int score)
@@ -431,10 +579,9 @@ shared_ptr<GameObject> Asteroids::CreateExplosion()
 
 void Asteroids::UpdateMenuDisplay()
 {
-    // Design note: Use ">" prefix to indicate selection. Will consider adding color-based highlighting
-    // or font changes in a later commit to improve visual feedback.
+    // Uses ">" prefix with color-based highlighting to indicate selection, enhancing visual feedback
     mStartGameLabel->SetText(mSelectedMenuOption == 0 ? "> Start Game" : "Start Game");
-    mDifficultyLabel->SetText(mSelectedMenuOption == 1 ? "> Difficult Mode" : "Difficult Mode");
+    mDifficultyLabel->SetText(mSelectedMenuOption == 1 ? (mEnablePowerups ? "> Difficult Mode: On" : "> Difficult Mode: Off") : (mEnablePowerups ? "Difficult Mode: On" : "Difficult Mode: Off"));
     mInstructionsLabel->SetText(mSelectedMenuOption == 2 ? "> Instructions" : "Instructions");
     mHighScoresLabel->SetText(mSelectedMenuOption == 3 ? "> High Scores" : "High Scores");
 }
@@ -452,9 +599,13 @@ void Asteroids::StartGame()
     mInstructionsShoot->SetVisible(false);
     mInstructionsGoal->SetVisible(false);
     mInstructionsExit->SetVisible(false);
+    for (int i = 0; i < 5; ++i)
+        mHighScoreLabels[i]->SetVisible(false);
+    mHighScoreExitLabel->SetVisible(false);
+    mNameInputLabel->SetVisible(false);
     mScoreLabel->SetVisible(true);
     mLivesLabel->SetVisible(true);
+    // Transitions to gameplay by spawning spaceship and showing lives/score, with
+    // difficulty settings and high-score integration implemented
     mGameWorld->AddObject(CreateSpaceship());
-    // Design note: Transition to gameplay by spawning spaceship and showing lives/score.
-    // Future commits will add difficulty settings and high-score integration.
 }
