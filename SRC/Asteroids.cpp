@@ -59,7 +59,6 @@ void Asteroids::Start()
 	}
 
 	CreateAsteroids(10);
-	// Removed CreateExtraLife() to avoid initial spawn
 	CreateGUI();
 
 	if (mIsStartScreen)
@@ -335,7 +334,6 @@ void Asteroids::OnTimer(int value)
 		mLevel++;
 		int num_asteroids = 10 + 2 * mLevel;
 		CreateAsteroids(num_asteroids);
-		// Removed CreateExtraLife() to avoid level-based spawning
 	}
 	else if (value == SHOW_GAME_OVER)
 	{
@@ -663,6 +661,7 @@ void Asteroids::StartGame()
 	mNameInputLabel->SetVisible(false);
 	mScoreLabel->SetVisible(true);
 	mLivesLabel->SetVisible(true);
+	mPlayer.ResetLives(); // Reset lives to 3 for new game
 	mGameWorld->AddObject(CreateSpaceship());
 	// Start ExtraLife spawn timer if difficulty is off
 	if (!mEnablePowerups)

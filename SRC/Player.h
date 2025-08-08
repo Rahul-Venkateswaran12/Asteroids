@@ -31,6 +31,12 @@ public:
 		FireLifeGained();
 	}
 
+	void ResetLives()
+	{
+		mLives = 3;
+		FireLifeGained(); // Notify listeners to update display
+	}
+
 	void AddListener(shared_ptr<IPlayerListener> listener)
 	{
 		mListeners.push_back(listener);
