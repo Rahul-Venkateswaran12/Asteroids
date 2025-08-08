@@ -310,13 +310,31 @@ void Asteroids::OnTimer(int value)
 	}
 	else if (value == SHOW_GAME_OVER)
 	{
+		// Design note: Show game over briefly, then show high score input screen
 		mGameOverLabel->SetVisible(true);
+		SetTimer(2000, 4); // New timer to transition to high score input after 2 seconds
+	}
+	else if (value == 4) // New timer value for high score input
+	{
 		mIsStartScreen = true;
 		mEnteringName = true;
 		mCurrentName = "";
 		mGameOverLabel->SetVisible(false);
 		mScoreLabel->SetVisible(false);
 		mLivesLabel->SetVisible(false);
+		mStartGameLabel->SetVisible(false);
+		mDifficultyLabel->SetVisible(false);
+		mInstructionsLabel->SetVisible(false);
+		mHighScoresLabel->SetVisible(false);
+		mTitleLabel->SetVisible(false);
+		mInstructionsThrust->SetVisible(false);
+		mInstructionsDirection->SetVisible(false);
+		mInstructionsShoot->SetVisible(false);
+		mInstructionsGoal->SetVisible(false);
+		mInstructionsExit->SetVisible(false);
+		for (int i = 0; i < 5; ++i)
+			mHighScoreLabels[i]->SetVisible(false);
+		mHighScoreExitLabel->SetVisible(false);
 		mNameInputLabel->SetVisible(true);
 		mNameInputLabel->SetText("Enter Name: ");
 	}
@@ -441,8 +459,6 @@ void Asteroids::CreateGUI()
 	mGameDisplay->GetContainer()->AddComponent(instructions_goal_component, GLVector2f(0.5f, 0.45f));
 
 	mInstructionsExit = make_shared<GUILabel>("Press SPACE to return.");
-	mInstructionsExit->SetHorizontalAlignment(GUIComponent::GUI_HALIGN_CENTER);
-	mInstructionsExit->SetVerticalAlignment(GUIComponent::GUI_VALIGN_MIDDLE);
 	mInstructionsExit->SetVisible(mShowingInstructions);
 	shared_ptr<GUIComponent> instructions_exit_component = static_pointer_cast<GUIComponent>(mInstructionsExit);
 	mGameDisplay->GetContainer()->AddComponent(instructions_exit_component, GLVector2f(0.5f, 0.35f));
@@ -554,15 +570,15 @@ void Asteroids::OnScoreChanged(int score)
 void Asteroids::OnPlayerKilled(int lives_left)
 {
 	// Design note: Handle life changes (decrement from asteroid, increment from extra life).
-	// Explosion only for asteroid collisions, triggered in Spaceship::OnCollision.
+	// Explosion handled in Spaceship::OnCollision.
 	std::ostringstream msg_stream;
 	msg_stream << "Lives: " << lives_left;
 	mLivesLabel->SetText(msg_stream.str());
-	if (lives_left < 0) // Game over
+	if (lives_left <= 0) // Game over
 	{
 		SetTimer(500, SHOW_GAME_OVER);
 	}
-	else if (lives_left > 0 && lives_left <= 3) // Asteroid collision (normal range after decrement)
+	else if (lives_left <= 3) // Asteroid collision (normal range after decrement)
 	{
 		SetTimer(1000, CREATE_NEW_PLAYER);
 	}
