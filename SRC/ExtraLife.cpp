@@ -1,27 +1,33 @@
 #include "ExtraLife.h"
 #include "GameUtil.h"
-#include "BoundingShape.h" // Added for BoundingShape definition
-#include "BoundingSphere.h" // Added for consistency with Asteroids::CreateExtraLife
+#include "BoundingShape.h"
+#include "BoundingSphere.h"
+#include <cstdlib>
 
 // PUBLIC INSTANCE CONSTRUCTORS ///////////////////////////////////////////////
 
-/** Default constructor. */
-ExtraLife::ExtraLife(void) : GameObject("ExtraLife")
+ExtraLife::ExtraLife(Player* player) : GameObject("ExtraLife"), mPlayer(player)
 {
+	// Design note: Randomize position and velocity like Asteroid for consistent spawning.
+	mAngle = rand() % 360;
+	mRotation = 0;
+	mPosition.x = (rand() % 200 - 100); // World width is 200
+	mPosition.y = (rand() % 200 - 100); // World height is 200
+	mPosition.z = 0.0;
+	mVelocity.x = 5.0 * cos(DEG2RAD * mAngle); // Slower than asteroids (10.0)
+	mVelocity.y = 5.0 * sin(DEG2RAD * mAngle);
+	mVelocity.z = 0.0;
 }
 
-/** Destructor. */
 ExtraLife::~ExtraLife(void)
 {
 }
 
 // PUBLIC INSTANCE METHODS ////////////////////////////////////////////////////
 
-/** Test for collision with another game object. */
 bool ExtraLife::CollisionTest(shared_ptr<GameObject> o)
 {
-	// Design note: Use a bounding sphere for collision detection, similar to Asteroid.
-	// Will implement spaceship collision to grant extra life in a later commit.
+	// Design note: Only collide with Spaceship, ignore all other objects (e.g., Asteroid, Bullet).
 	if (o->GetType() == GameObjectType("Spaceship"))
 	{
 		if (mBoundingShape.get() && o->GetBoundingShape().get())
@@ -32,10 +38,19 @@ bool ExtraLife::CollisionTest(shared_ptr<GameObject> o)
 	return false;
 }
 
-/** Handle collision with other objects. */
 void ExtraLife::OnCollision(const GameObjectList& objects)
 {
-	// Design note: Mark the extra life for removal upon collision with the spaceship.
-	// Actual life increment will be implemented in a later commit.
-	mWorld->FlagForRemoval(GetThisPtr());
+	// Design note: On collision with Spaceship, increment lives and remove heart.
+	for (const auto& obj : objects)
+	{
+		if (obj->GetType() == GameObjectType("Spaceship"))
+		{
+			if (mPlayer)
+			{
+				mPlayer->AddLife();
+				mWorld->FlagForRemoval(GetThisPtr());
+			}
+			break;
+		}
+	}
 }

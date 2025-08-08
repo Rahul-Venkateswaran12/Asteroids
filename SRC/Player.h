@@ -2,7 +2,6 @@
 #define __PLAYER_H__
 
 #include "GameUtil.h"
-
 #include "GameObject.h"
 #include "GameObjectType.h"
 #include "IPlayerListener.h"
@@ -26,6 +25,12 @@ public:
 		}
 	}
 
+	void AddLife()
+	{
+		mLives += 1;
+		FirePlayerKilled();
+	}
+
 	void AddListener(shared_ptr<IPlayerListener> listener)
 	{
 		mListeners.push_back(listener);
@@ -33,7 +38,6 @@ public:
 
 	void FirePlayerKilled()
 	{
-		// Send message to all listeners
 		for (PlayerListenerList::iterator lit = mListeners.begin();
 			lit != mListeners.end(); ++lit) {
 			(*lit)->OnPlayerKilled(mLives);
@@ -42,9 +46,7 @@ public:
 
 private:
 	int mLives;
-
 	typedef std::list< shared_ptr<IPlayerListener> > PlayerListenerList;
-
 	PlayerListenerList mListeners;
 };
 

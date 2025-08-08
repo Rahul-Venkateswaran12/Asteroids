@@ -16,7 +16,7 @@
 class GameObject;
 class Spaceship;
 class GUILabel;
-class ExtraLife; // Added for extra life power-up
+class ExtraLife;
 
 class Asteroids : public GameSession, public IKeyboardListener, public IGameWorldListener, public IScoreListener, public IPlayerListener
 {
@@ -79,6 +79,7 @@ private:
 	const static uint SHOW_GAME_OVER = 0;
 	const static uint START_NEXT_LEVEL = 1;
 	const static uint CREATE_NEW_PLAYER = 2;
+	const static uint SPAWN_EXTRA_LIFE = 3;
 
 	ScoreKeeper mScoreKeeper;
 	Player mPlayer;
@@ -92,8 +93,8 @@ private:
 	void SaveHighScores();
 	void UpdateHighScoreDisplay();
 	void AddHighScore(const std::string& name, int score);
-	void UpdateMenuDisplay(); // Declared to resolve C3861 error
-	void CreateExtraLife(); // Added for spawning extra life power-up
+	void UpdateMenuDisplay();
+	void CreateExtraLife();
 };
 
 #endif

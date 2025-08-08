@@ -6,12 +6,12 @@
 Asteroid::Asteroid(void) : GameObject("Asteroid")
 {
 	mAngle = rand() % 360;
-	mRotation = 0; // rand() % 90;
+	mRotation = 0;
 	mPosition.x = rand() / 2;
 	mPosition.y = rand() / 2;
 	mPosition.z = 0.0;
-	mVelocity.x = 10.0 * cos(DEG2RAD*mAngle);
-	mVelocity.y = 10.0 * sin(DEG2RAD*mAngle);
+	mVelocity.x = 10.0 * cos(DEG2RAD * mAngle);
+	mVelocity.y = 10.0 * sin(DEG2RAD * mAngle);
 	mVelocity.z = 0.0;
 }
 
@@ -21,7 +21,9 @@ Asteroid::~Asteroid(void)
 
 bool Asteroid::CollisionTest(shared_ptr<GameObject> o)
 {
-	if (GetType() == o->GetType()) return false;
+	// Design note: Ignore collisions with other Asteroids and ExtraLife.
+	if (o->GetType() == GameObjectType("Asteroid") || o->GetType() == GameObjectType("ExtraLife"))
+		return false;
 	if (mBoundingShape.get() == NULL) return false;
 	if (o->GetBoundingShape().get() == NULL) return false;
 	return mBoundingShape->CollisionTest(o->GetBoundingShape());

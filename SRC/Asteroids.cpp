@@ -12,14 +12,13 @@
 #include "GUILabel.h"
 #include "Explosion.h"
 #include "GUIContainer.h"
-#include "ExtraLife.h" // Added for extra life power-up
+#include "ExtraLife.h"
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 
 // PUBLIC INSTANCE CONSTRUCTORS ///////////////////////////////////////////////
 
-/** Constructor. Takes arguments from command line, just in case. */
 Asteroids::Asteroids(int argc, char* argv[])
 	: GameSession(argc, argv), mIsStartScreen(true), mSelectedMenuOption(0), mEnablePowerups(false),
 	mShowingInstructions(false), mShowingHighScores(false), mEnteringName(false), mCurrentName("")
@@ -29,12 +28,10 @@ Asteroids::Asteroids(int argc, char* argv[])
 	LoadHighScores();
 }
 
-/** Destructor. */
 Asteroids::~Asteroids(void)
 {
 }
 
-/** Start an asteroids game. */
 void Asteroids::Start()
 {
 	shared_ptr<Asteroids> thisPtr = shared_ptr<Asteroids>(this);
@@ -52,7 +49,6 @@ void Asteroids::Start()
 	Animation* explosion_anim = AnimationManager::GetInstance().CreateAnimationFromFile("explosion", 64, 1024, 64, 64, "explosion_fs.png");
 	Animation* asteroid1_anim = AnimationManager::GetInstance().CreateAnimationFromFile("asteroid1", 128, 8192, 128, 128, "asteroid1_fs.png");
 	Animation* spaceship_anim = AnimationManager::GetInstance().CreateAnimationFromFile("spaceship", 128, 128, 128, 128, "spaceship_fs.png");
-	// Design note: Added extra life sprite with single frame (32x32), repeating resolution as per spaceship.
 	Animation* extralife_anim = AnimationManager::GetInstance().CreateAnimationFromFile("extralife", 32, 32, 32, 32, "extralife_fs.png");
 
 	if (!mIsStartScreen)
@@ -61,8 +57,6 @@ void Asteroids::Start()
 	}
 
 	CreateAsteroids(10);
-	// Design note: Spawn one extra life at game start for testing. Will adjust spawning logic
-	// (e.g., random intervals or level-based) in a later commit.
 	CreateExtraLife();
 	CreateGUI();
 
@@ -111,7 +105,6 @@ void Asteroids::Start()
 	GameSession::Start();
 }
 
-/** Stop the current game. */
 void Asteroids::Stop()
 {
 	GameSession::Stop();
@@ -233,11 +226,8 @@ void Asteroids::OnKeyPressed(uchar key, int x, int y)
 	{
 		switch (key)
 		{
-		case ' ':
-			mSpaceship->Shoot();
-			break;
-		default:
-			break;
+		case ' ': mSpaceship->Shoot(); break;
+		default: break;
 		}
 	}
 }
@@ -302,8 +292,6 @@ void Asteroids::OnObjectRemoved(GameWorld* world, shared_ptr<GameObject> object)
 			SetTimer(500, START_NEXT_LEVEL);
 		}
 	}
-	// Design note: No handling for ExtraLife removal yet. Will add collision detection
-	// and life increment logic in a later commit.
 }
 
 void Asteroids::OnTimer(int value)
@@ -318,8 +306,6 @@ void Asteroids::OnTimer(int value)
 		mLevel++;
 		int num_asteroids = 10 + 2 * mLevel;
 		CreateAsteroids(num_asteroids);
-		// Design note: Spawn one extra life per level for testing. Will refine spawning
-		// frequency and conditions in a later commit.
 		CreateExtraLife();
 	}
 	else if (value == SHOW_GAME_OVER)
@@ -373,16 +359,17 @@ void Asteroids::CreateAsteroids(const uint num_asteroids)
 
 void Asteroids::CreateExtraLife()
 {
-	// Design note: Spawns one extra life power-up, mimicking asteroid creation for consistency.
-	// Uses a single-frame sprite and random positioning. Collision effects will be added later.
+	// Design note: Spawns one extra life power-up with random positioning and velocity.
+	// Sprite rotated 180 degrees to fix upside-down rendering.
 	Animation* anim_ptr = AnimationManager::GetInstance().GetAnimationByName("extralife");
 	shared_ptr<Sprite> extralife_sprite
 		= make_shared<Sprite>(anim_ptr->GetWidth(), anim_ptr->GetHeight(), anim_ptr);
-	extralife_sprite->SetLoopAnimation(false); // Single frame, no animation needed
-	shared_ptr<GameObject> extralife = make_shared<ExtraLife>();
+	extralife_sprite->SetLoopAnimation(false);
+	shared_ptr<GameObject> extralife = make_shared<ExtraLife>(&mPlayer);
 	extralife->SetBoundingShape(make_shared<BoundingSphere>(extralife->GetThisPtr(), 4.0f));
 	extralife->SetSprite(extralife_sprite);
-	extralife->SetScale(0.1f); // Smaller scale, similar to spaceship
+	extralife->SetScale(0.2f);
+	extralife->SetRotation(180.0f);
 	mGameWorld->AddObject(extralife);
 }
 
@@ -566,23 +553,18 @@ void Asteroids::OnScoreChanged(int score)
 
 void Asteroids::OnPlayerKilled(int lives_left)
 {
-	shared_ptr<GameObject> explosion = CreateExplosion();
-	explosion->SetPosition(mSpaceship->GetPosition());
-	explosion->SetRotation(mSpaceship->GetRotation());
-	mGameWorld->AddObject(explosion);
-
+	// Design note: Handle life changes (decrement from asteroid, increment from extra life).
+	// Explosion only for asteroid collisions, triggered in Spaceship::OnCollision.
 	std::ostringstream msg_stream;
 	msg_stream << "Lives: " << lives_left;
-	std::string lives_msg = msg_stream.str();
-	mLivesLabel->SetText(lives_msg);
-
-	if (lives_left > 0)
-	{
-		SetTimer(1000, CREATE_NEW_PLAYER);
-	}
-	else
+	mLivesLabel->SetText(msg_stream.str());
+	if (lives_left < 0) // Game over
 	{
 		SetTimer(500, SHOW_GAME_OVER);
+	}
+	else if (lives_left > 0 && lives_left <= 3) // Asteroid collision (normal range after decrement)
+	{
+		SetTimer(1000, CREATE_NEW_PLAYER);
 	}
 }
 
