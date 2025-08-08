@@ -25,10 +25,10 @@ public:
 		}
 	}
 
-	void AddLife()
+	void IncrementLife()
 	{
 		mLives += 1;
-		FirePlayerKilled();
+		FireLifeGained();
 	}
 
 	void AddListener(shared_ptr<IPlayerListener> listener)
@@ -41,6 +41,14 @@ public:
 		for (PlayerListenerList::iterator lit = mListeners.begin();
 			lit != mListeners.end(); ++lit) {
 			(*lit)->OnPlayerKilled(mLives);
+		}
+	}
+
+	void FireLifeGained()
+	{
+		for (PlayerListenerList::iterator lit = mListeners.begin();
+			lit != mListeners.end(); ++lit) {
+			(*lit)->OnLifeGained(mLives);
 		}
 	}
 

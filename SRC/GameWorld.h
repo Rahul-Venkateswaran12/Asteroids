@@ -22,23 +22,25 @@ public:
 	void Update(int t);
 	void Render(void);
 
-	void AddObject( shared_ptr<GameObject> ptr );
-	void RemoveObject( shared_ptr<GameObject> ptr );
-	void RemoveObject( GameObject* ptr );
+	void AddObject(shared_ptr<GameObject> ptr);
+	void RemoveObject(shared_ptr<GameObject> ptr);
+	void RemoveObject(GameObject* ptr);
 	// shared_ptr<GameObject> GetGameObject( string name );
 
-	void FlagForRemoval( GameObject* ptr );
-	void FlagForRemoval( weak_ptr<GameObject> ptr );
+	void FlagForRemoval(GameObject* ptr);
+	void FlagForRemoval(weak_ptr<GameObject> ptr);
 
-	GameObjectList GetCollisions( shared_ptr<GameObject> ptr );
-	GameObjectList GetCollisions( GameObject* optr );
+	GameObjectList GetCollisions(shared_ptr<GameObject> ptr);
+	GameObjectList GetCollisions(GameObject* optr);
 
-	void AddListener( IGameWorldListener* lptr) { mListeners.push_back(lptr); }
-	void RemoveListener( IGameWorldListener* lptr) { mListeners.remove(lptr); }
+	const GameObjectList& GetObjects() const { return mGameObjects; } // Added to access game objects
+
+	void AddListener(IGameWorldListener* lptr) { mListeners.push_back(lptr); }
+	void RemoveListener(IGameWorldListener* lptr) { mListeners.remove(lptr); }
 
 	void FireWorldUpdated();
-	void FireObjectAdded( shared_ptr<GameObject> ptr );
-	void FireObjectRemoved( shared_ptr<GameObject> ptr );
+	void FireObjectAdded(shared_ptr<GameObject> ptr);
+	void FireObjectRemoved(shared_ptr<GameObject> ptr);
 
 	void SetWidth(int w) { mWidth = w; }
 	int GetWidth() { return mWidth; }
@@ -46,7 +48,7 @@ public:
 	void SetHeight(int h) { mHeight = h; }
 	int GetHeight() { return mHeight; }
 
-	void WrapXY(float &x, float &y);
+	void WrapXY(float& x, float& y);
 
 protected:
 	void UpdateObjects(int t);

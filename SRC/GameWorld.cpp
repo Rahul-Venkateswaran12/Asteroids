@@ -24,10 +24,10 @@ void GameWorld::Update(int t)
 
 	// Remove objects flagged for removal
 	WeakGameObjectList::iterator it = mGameObjectsToRemove.begin();
-	while( it != mGameObjectsToRemove.end() )
+	while (it != mGameObjectsToRemove.end())
 	{
 		RemoveObject(it->lock());
-		it = mGameObjectsToRemove.erase( it );
+		it = mGameObjectsToRemove.erase(it);
 	}
 
 	// Send update message to listeners
@@ -44,7 +44,7 @@ void GameWorld::Render(void)
 	// Initialize the projection matrix to the identity matrix
 	glLoadIdentity();
 	// Set orthographic projection to include the world
-	glOrtho(-mWidth/2, mWidth/2, -mHeight/2, mHeight/2, -100, 100);
+	glOrtho(-mWidth / 2, mWidth / 2, -mHeight / 2, mHeight / 2, -100, 100);
 
 	// Switch to model mode ready for rendering
 	glMatrixMode(GL_MODELVIEW);
@@ -88,7 +88,7 @@ void GameWorld::FlagForRemoval(weak_ptr<GameObject> ptr)
 void GameWorld::RemoveObject(shared_ptr<GameObject> ptr)
 {
 	// Check if we the pointer has already been deleted
-	if(ptr.get() == nullptr) return;
+	if (ptr.get() == nullptr) return;
 	// Remove the game object from the list
 	mGameObjects.remove(ptr);
 	// Remove game object from collision map
@@ -151,8 +151,7 @@ GameObjectList GameWorld::GetCollisions(GameObject* optr)
 void GameWorld::UpdateObjects(int t)
 {
 	// Update every object in the world
-	GameObjectList::iterator it = mGameObjects.begin();
-	for(GameObjectList::iterator it = mGameObjects.begin(); it != mGameObjects.end(); ++it) 
+	for (GameObjectList::iterator it = mGameObjects.begin(); it != mGameObjects.end(); ++it)
 	{
 		(*it)->Update(t);
 	}
@@ -166,7 +165,7 @@ void GameWorld::UpdateCollisions(int t)
 
 	// Clear collisions
 	for (it1 = mCollisions.begin(); it1 != mCollisions.end(); ++it1) {
-		GameObjectList &collisions = it1->second;
+		GameObjectList& collisions = it1->second;
 		collisions.clear();
 	}
 
@@ -186,7 +185,6 @@ void GameWorld::UpdateCollisions(int t)
 		}
 	}
 
-
 	// Call objects to handle collisions
 	it1 = mCollisions.begin();
 	while (it1 != mCollisions.end()) {
@@ -200,11 +198,11 @@ void GameWorld::UpdateCollisions(int t)
 }
 
 /** Utility method to wrap positions around the world's edges. */
-void GameWorld::WrapXY(GLfloat &x, GLfloat &y)
+void GameWorld::WrapXY(GLfloat& x, GLfloat& y)
 {
 	// Wrap x and y coords that are out of the bounds of the world
-	while (x >  mWidth/2)  x -= mWidth; 
-	while (y >  mHeight/2) y -= mHeight; 
-	while (x < -mWidth/2)  x += mWidth; 
-	while (y < -mHeight/2) y += mHeight; 
+	while (x > mWidth / 2)  x -= mWidth;
+	while (y > mHeight / 2) y -= mHeight;
+	while (x < -mWidth / 2)  x += mWidth;
+	while (y < -mHeight / 2) y += mHeight;
 }

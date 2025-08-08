@@ -47,7 +47,7 @@ void ExtraLife::OnCollision(const GameObjectList& objects)
 		{
 			if (mPlayer)
 			{
-				mPlayer->AddLife();
+				mPlayer->IncrementLife();
 				mWorld->FlagForRemoval(GetThisPtr());
 			}
 			break;

@@ -16,12 +16,14 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+#include <cstdlib>
 
 // PUBLIC INSTANCE CONSTRUCTORS ///////////////////////////////////////////////
 
 Asteroids::Asteroids(int argc, char* argv[])
 	: GameSession(argc, argv), mIsStartScreen(true), mSelectedMenuOption(0), mEnablePowerups(false),
-	mShowingInstructions(false), mShowingHighScores(false), mEnteringName(false), mCurrentName("")
+	mShowingInstructions(false), mShowingHighScores(false), mEnteringName(false), mCurrentName(""),
+	mLastSpawnAttemptTime(0)
 {
 	mLevel = 0;
 	mAsteroidCount = 0;
@@ -57,7 +59,7 @@ void Asteroids::Start()
 	}
 
 	CreateAsteroids(10);
-	CreateExtraLife();
+	// Removed CreateExtraLife() to avoid initial spawn
 	CreateGUI();
 
 	if (mIsStartScreen)
@@ -294,6 +296,33 @@ void Asteroids::OnObjectRemoved(GameWorld* world, shared_ptr<GameObject> object)
 	}
 }
 
+// PUBLIC INSTANCE METHODS IMPLEMENTING IPlayerListener ///////////////////////
+
+void Asteroids::OnPlayerKilled(int lives_left)
+{
+	// Design note: Handle life decrements (asteroid collisions).
+	// Explosion handled in Spaceship::OnCollision.
+	std::ostringstream msg_stream;
+	msg_stream << "Lives: " << lives_left;
+	mLivesLabel->SetText(msg_stream.str());
+	if (lives_left <= 0) // Game over
+	{
+		SetTimer(500, SHOW_GAME_OVER);
+	}
+	else // Asteroid collision
+	{
+		SetTimer(1000, CREATE_NEW_PLAYER);
+	}
+}
+
+void Asteroids::OnLifeGained(int lives_left)
+{
+	// Design note: Handle life increments (heart collection), update display only.
+	std::ostringstream msg_stream;
+	msg_stream << "Lives: " << lives_left;
+	mLivesLabel->SetText(msg_stream.str());
+}
+
 void Asteroids::OnTimer(int value)
 {
 	if (value == CREATE_NEW_PLAYER)
@@ -306,7 +335,7 @@ void Asteroids::OnTimer(int value)
 		mLevel++;
 		int num_asteroids = 10 + 2 * mLevel;
 		CreateAsteroids(num_asteroids);
-		CreateExtraLife();
+		// Removed CreateExtraLife() to avoid level-based spawning
 	}
 	else if (value == SHOW_GAME_OVER)
 	{
@@ -337,6 +366,21 @@ void Asteroids::OnTimer(int value)
 		mHighScoreExitLabel->SetVisible(false);
 		mNameInputLabel->SetVisible(true);
 		mNameInputLabel->SetText("Enter Name: ");
+	}
+	else if (value == SPAWN_EXTRA_LIFE)
+	{
+		// Design note: 100% chance to spawn ExtraLife every 2-5s for testing if difficulty is off and no heart exists
+		if (!mEnablePowerups && !HasExtraLife())
+		{
+			if (true) // 100% chance for testing
+			{
+				CreateExtraLife();
+			}
+		}
+		// Schedule next spawn attempt in 2-5s
+		int next_interval = 2000 + (rand() % 3001); // 2,000 to 5,000 ms
+		SetTimer(next_interval, SPAWN_EXTRA_LIFE);
+		mLastSpawnAttemptTime = glutGet(GLUT_ELAPSED_TIME);
 	}
 }
 
@@ -389,6 +433,19 @@ void Asteroids::CreateExtraLife()
 	extralife->SetScale(0.2f);
 	extralife->SetRotation(180.0f);
 	mGameWorld->AddObject(extralife);
+}
+
+bool Asteroids::HasExtraLife()
+{
+	// Design note: Check if an ExtraLife object exists in the game world
+	for (const auto& obj : mGameWorld->GetObjects())
+	{
+		if (obj->GetType() == GameObjectType("ExtraLife"))
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void Asteroids::CreateGUI()
@@ -567,23 +624,6 @@ void Asteroids::OnScoreChanged(int score)
 	mScoreLabel->SetText(score_msg);
 }
 
-void Asteroids::OnPlayerKilled(int lives_left)
-{
-	// Design note: Handle life changes (decrement from asteroid, increment from extra life).
-	// Explosion handled in Spaceship::OnCollision.
-	std::ostringstream msg_stream;
-	msg_stream << "Lives: " << lives_left;
-	mLivesLabel->SetText(msg_stream.str());
-	if (lives_left <= 0) // Game over
-	{
-		SetTimer(500, SHOW_GAME_OVER);
-	}
-	else if (lives_left <= 3) // Asteroid collision (normal range after decrement)
-	{
-		SetTimer(1000, CREATE_NEW_PLAYER);
-	}
-}
-
 shared_ptr<GameObject> Asteroids::CreateExplosion()
 {
 	Animation* anim_ptr = AnimationManager::GetInstance().GetAnimationByName("explosion");
@@ -624,4 +664,11 @@ void Asteroids::StartGame()
 	mScoreLabel->SetVisible(true);
 	mLivesLabel->SetVisible(true);
 	mGameWorld->AddObject(CreateSpaceship());
+	// Start ExtraLife spawn timer if difficulty is off
+	if (!mEnablePowerups)
+	{
+		int initial_interval = 2000 + (rand() % 3001); // 2-5s for testing
+		SetTimer(initial_interval, SPAWN_EXTRA_LIFE);
+		mLastSpawnAttemptTime = glutGet(GLUT_ELAPSED_TIME);
+	}
 }

@@ -37,7 +37,8 @@ public:
 	void OnScoreChanged(int score);
 
 	// IPlayerListener interface
-	void OnPlayerKilled(int lives_left);
+	void OnPlayerKilled(int lives_left) override;
+	void OnLifeGained(int lives_left) override;
 
 	// IGameWorldListener interface
 	void OnWorldUpdated(GameWorld* world) {}
@@ -75,6 +76,7 @@ private:
 	bool mEnteringName;
 	std::string mCurrentName;
 	std::vector<std::pair<std::string, int>> mHighScores;
+	int mLastSpawnAttemptTime; // Track last spawn attempt time (ms)
 
 	const static uint SHOW_GAME_OVER = 0;
 	const static uint START_NEXT_LEVEL = 1;
@@ -95,6 +97,7 @@ private:
 	void AddHighScore(const std::string& name, int score);
 	void UpdateMenuDisplay();
 	void CreateExtraLife();
+	bool HasExtraLife(); // Check if an ExtraLife exists in the game world
 };
 
 #endif
